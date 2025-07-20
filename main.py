@@ -1,5 +1,6 @@
 
 from fastapi import FastAPI, Depends, HTTPException, status, Query
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import timedelta
@@ -15,6 +16,15 @@ app = FastAPI(
     title="KPA Form Data API", 
     version="1.0.0",
     description="API for KPA form data management with authentication"
+)
+
+# Add CORS middleware for Flutter frontend integration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific Flutter app URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ================================
@@ -83,8 +93,11 @@ def submit_wheel_specification(
                 "status": db_wheel_spec.status
             }
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error submitting wheel specification: {str(e)}")
+        print(f"Error creating wheel specification: {str(e)}")  # For debugging
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.post("/api/forms/bogie-checksheet", response_model=schemas.KPASuccessResponse, status_code=201, tags=["KPA Forms"])
 def submit_bogie_checksheet(
